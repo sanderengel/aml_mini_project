@@ -1,3 +1,5 @@
 *.jpg
 .vscode/
 .venv
+tester.*
+__pycache__/
