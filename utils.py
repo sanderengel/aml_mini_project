@@ -7,6 +7,7 @@
 ###############
 
 import os
+import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -75,3 +76,21 @@ def plot_img(img_array: np.array, label_code: str = None, class_map: dict = None
 
     plt.axis('off')
     plt.show()
+
+
+
+############
+### MISC ###
+############
+
+def get_device():
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
+    return device
+
+def data_to_device(images, labels, device):
+    return images.to(device), labels.to(device)
