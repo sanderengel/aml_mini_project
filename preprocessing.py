@@ -84,9 +84,10 @@ def get_data_loader(
     metadata: pd.DataFrame,
     root_dir: str,
     batch_size: int = 32,
-    distort: bool = False
+    shuffle: bool = True,
+    distort: bool = True
 ):
     transformer = _get_transformer(distort)
     ds = DistractedDriverDataset(metadata, root_dir, transformer)
-    loader = DataLoader(ds, batch_size = batch_size, shuffle = False, num_workers = 2)
+    loader = DataLoader(ds, batch_size = batch_size, shuffle = shuffle, num_workers = 2)
     return loader

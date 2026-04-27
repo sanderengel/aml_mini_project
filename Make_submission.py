@@ -10,7 +10,7 @@ from model import get_model
 from utils import get_device
 
 
-TEST_DIR = "data/imgs/test"
+TEST_DIR = "data/state-farm-distracted-driver-detection/imgs/test"
 MODEL_PATH = "data/models/Resnet18_5k_5e.pth"
 OUTPUT_CSV = "data/submissions/sub2.csv"
 

@@ -17,19 +17,9 @@ from preprocessing import get_data_loader
 
 
 
-#####################
-### LOAD METADATA ###
-#####################
-
-driver_img_list = load_driver_img_list()
-
-
-
 #################
 ### FUNCTIONS ###
 #################
-
-
 
 def _train_model(
     model,
@@ -37,34 +27,39 @@ def _train_model(
     val_loader,
     criterion,
     optimizer,
-    epochs = 10
+    epochs = 5,
+    fold = 0
 ):
     device = get_device()
     model.to(device)
 
-    best_val_loss = float('inf')
+    best_val_loss = float("inf")
 
     for epoch in range(epochs):
+        # Training
+        model.train()
+        train_loss = 0.0
 
-        ## Training
-        model.train() # Set to training mode
-        for images, labels in train_loader:
+        for batch_idx, (images, labels) in enumerate(train_loader):
             images, labels = data_to_device(images, labels, device)
 
-            # Get loss
             optimizer.zero_grad()
+
             outputs = model(images)
             loss = criterion(outputs, labels)
+
             loss.backward()
             optimizer.step()
 
-            # Add to loss
             train_loss += loss.item() * images.size(0)
+
+            if batch_idx % 10 == 0:
+                print(f"Epoch {epoch + 1}, batch {batch_idx}/{len(train_loader)}, loss: {loss.item():.4f}")
 
         avg_train_loss = train_loss / len(train_loader.dataset)
 
-        ## Validation
-        model.eval() # Set to evalation
+        # Validation
+        model.eval()
         val_loss = 0.0
         correct = 0
 
@@ -72,25 +67,28 @@ def _train_model(
             for images, labels in val_loader:
                 images, labels = data_to_device(images, labels, device)
 
-                # Get loss
                 outputs = model(images)
                 loss = criterion(outputs, labels)
+
                 val_loss += loss.item() * images.size(0)
 
-                # Get predictions
                 _, predicted = torch.max(outputs, 1)
                 correct += (predicted == labels).sum().item()
 
-        avg_val_loss = val_loss / len(val_loader.datasets)
+        avg_val_loss = val_loss / len(val_loader.dataset)
         val_acc = correct / len(val_loader.dataset)
 
-        print(f'Epoch {epoch + 1}: train Loss: {avg_train_loss:.4f}, val loss {avg_val_loss:.4f}, val acc: {val_acc:.4f}')
+        print(
+            f"Epoch {epoch + 1}: "
+            f"train loss: {avg_train_loss:.4f}, "
+            f"val loss: {avg_val_loss:.4f}, "
+            f"val acc: {val_acc:.4f}"
+        )
 
-        # Save best model to checkpoint
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_state_dict(), 'best_driver_model.pth')
-            print('Checkpoint saved.')
+            torch.save(model.state_dict(), f"data/models/best_driver_model_fold{fold}.pth")
+            print("Checkpoint saved.")
 
     return model
 
@@ -100,25 +98,43 @@ def _train_model(
 ### TRAINING ###
 ################
 
-gkf = GroupKFold(n_splits = 5)
-for train_idx, val_idx in gkf.split(
-    driver_img_list['img'],
-    driver_img_list['classname'],
-    groups = driver_img_list['subject']
-):
-    train = driver_img_list.iloc[train_idx]
-    val = driver_img_list.iloc[val_idx]
+if __name__ == '__main__':
+    driver_img_list = load_driver_img_list()
 
-    # TODO: Initialize parameters for _train_model() and call it
+    gkf = GroupKFold(n_splits=5)
 
-    model = get_model()
-    train_loader = get_data_loader(train)
-    val_loader = get_data_loader(val)
+    for fold, (train_idx, val_idx) in enumerate(
+        gkf.split(
+            driver_img_list["img"],
+            driver_img_list["classname"],
+            groups=driver_img_list["subject"]
+        )
+    ):
+        print(f"\nTraining fold {fold + 1}")
 
-    _train_model()
+        train = driver_img_list.iloc[train_idx]
+        val = driver_img_list.iloc[val_idx]
 
+        model = get_model(num_classes=10)
 
-### TODO:
-# 1. Dataset Class: we need a dataset class with data augmentation (random rotation and color jitter, etc)
-# 2. Loss function (Cross Entropy)
-# 3. Optimizer (Adam / SGD with Momentum)
+        train_dir = 'data/state-farm-distracted-driver-detection/imgs/train'
+        train_loader = get_data_loader(train, root_dir = train_dir)
+        val_loader = get_data_loader(val, root_dir = train_dir, shuffle = False, distort = False)
+
+        criterion = nn.CrossEntropyLoss()
+
+        optimizer = optim.Adam(
+            model.parameters(),
+            lr = 1e-4,
+            weight_decay = 1e-4
+        )
+
+        _train_model(
+            model = model,
+            train_loader = train_loader,
+            val_loader = val_loader,
+            criterion = criterion,
+            optimizer = optimizer,
+            epochs = 5,
+            fold = fold + 1
+        )
