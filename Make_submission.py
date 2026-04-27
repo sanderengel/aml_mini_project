@@ -11,8 +11,8 @@ from utils import get_device
 
 
 TEST_DIR = "data/imgs/test"
-MODEL_PATH = "best_driver_model.pth"
-OUTPUT_CSV = "submission.csv"
+MODEL_PATH = "data/models/Resnet18_5k_5e.pth"
+OUTPUT_CSV = "data/submissions/sub2.csv"
 
 classes = [f"c{i}" for i in range(10)]
 

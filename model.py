@@ -5,6 +5,7 @@
 ###############
 from torchvision import models
 from torchvision.models import ResNet18_Weights
+from torchvision.models import EfficientNet_B0_Weights
 import torch.nn as nn
 
 
@@ -12,16 +13,11 @@ import torch.nn as nn
 ### MODEL ###
 #############
 
-def get_model(num_classes=10, freeze_backbone=False):
+def get_model(num_classes=10):
     model = models.resnet18(weights=ResNet18_Weights.DEFAULT)
 
     # Get number of features from ResNet backbone
     in_features = model.fc.in_features
-
-    # Optional: freeze backbone
-    if freeze_backbone:
-        for param in model.parameters():
-            param.requires_grad = False
 
     # Replace classification head
     model.fc = nn.Sequential(
@@ -33,4 +29,19 @@ def get_model(num_classes=10, freeze_backbone=False):
     )
 
     return model
+
+
+# def get_model(num_classes=10):
+#     model = models.efficientnet_b0(
+#         weights=EfficientNet_B0_Weights.DEFAULT
+#     )
+
+#     in_features = model.classifier[1].in_features
+
+#     model.classifier = nn.Sequential(
+#         nn.Dropout(0.3),
+#         nn.Linear(in_features, num_classes)
+#     )
+
+#     return model
 

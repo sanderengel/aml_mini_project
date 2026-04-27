@@ -12,9 +12,9 @@ class DriverDataset(Dataset):
 
         self.transform = transforms.Compose([
             transforms.Resize((224, 224)),
-            transforms.RandomHorizontalFlip(),
             transforms.ColorJitter(0.2, 0.2),
             transforms.ToTensor(),
+            
         ])
 
     def __len__(self):
@@ -26,16 +26,14 @@ class DriverDataset(Dataset):
         img_name = row["img"]
         class_name = row["classname"]
 
-        # 🔥 THIS is the important fix
         img_path = os.path.join(self.root_dir, class_name, img_name)
 
         image = Image.open(img_path).convert("RGB")
         image = self.transform(image)
 
-        label = int(class_name[1])  # "c3" → 3
+        label = int(class_name[1])
 
         return image, label
-    
 
 
 
