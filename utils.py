@@ -43,10 +43,9 @@ def load_driver_img_list() -> pd.DataFrame:
     df = pd.read_csv(DRIVER_IMG_LIST_PATH)
     return df
 
-def get_img_data(
+def get_img(
     img_path: str,
-    target_size: tuple = (224, 224),
-    return_tensor: bool = False
+    return_array: bool = False,
 ):
     """
     Read an image from disk.
@@ -57,16 +56,41 @@ def get_img_data(
     # Load and ensure RGB
     img = Image.open(img_path).convert('RGB')
 
-    if target_size:
-        img = img.resize(target_size)
+    if return_array:
+        return np.array(img)
+    return img
 
-    return np.array(img)
-
-def plot_img(img_array: np.array, label_code: str = None, class_map: dict = None):
+def plot_img(
+    img_array: np.array = None,
+    img_tensor: torch.tensor = None,
+    label_code: str = None,
+    class_map: dict = None
+):
     """
     Display an image.
     """
-    plt.imshow(img_array)
+    if (img_array is None and img_tensor is None) or (img_array and img_tensor):
+        raise ValueError("Please pass exactly one of 'img_array' and 'img_tensor'.")
+
+    if img_array:
+        img = img_array
+
+    else:
+        # Move to CPU and convert to array
+        img = img_tensor.clone().detach().cpu().numpy()
+
+        # Transpose from (C, H, W) to (H, W, C)
+        img = img.transpose(1, 2, 0)
+
+        # Un-normalize
+        mean = np.array([.485, .456, .406])
+        std = np.array([.229, .224, .225])
+        img = std * img + mean
+
+        # Clip to 0-1 range
+        img = np.clip(img, 0, 1)
+
+    plt.imshow(img)
 
     if label_code:
         title_str = label_code
