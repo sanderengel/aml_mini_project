@@ -53,24 +53,32 @@ class DistractedDriverDataset(Dataset):
 ### DATA TRANSFORMER AND LOADER ###
 ###################################
 
-def _get_transformer(distort: bool = False):
+def _get_transformer(aug_params: dict = None):
     # Standard ImageNet normalization used for pre-trained models
     norm_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+
+    # Apply augmentation if params passed
+    if aug_params:
+        rotation = aug_params.get('rotation', 0)
+        crop_scale = aug_params.get('crop_scale', 1.0)
+        color_jitter = aug_params.get('color_jitter', 0.0)
+        erasing_prob = aug_params.get('erasing_prob', 0.0)
+
+        steps = []
+        if rotation > 0:
+            steps.append(transforms.RandomRotation(rotation))
+        if crop_scale < 1.0:
+            steps.append(transforms.RandomResizedCrop(224, scale = (crop_scale, 1.0)))
+        else:
+            steps.append(transforms.Resize((224, 224)))
+        if color_jitter > 0:
+            steps.append(transforms.ColorJitter(brightness = color_jitter, contrast = color_jitter))
+        steps += [transforms.ToTensor(), transforms.Normalize(*norm_stats)]
+        if erasing_prob > 0:
+            steps.append(transforms.RandomErasing(p = erasing_prob, scale = (0.02, 0.2)))
+        return transforms.Compose(steps)
     
-    if distort:
-        return transforms.Compose([
-            # Distort image
-            transforms.RandomRotation(15),                           # Rotate
-            transforms.RandomResizedCrop(224, scale = (0.7, 0.9)),   # Crop
-            transforms.ColorJitter(brightness = .2, contrast = 0.2), # Distort color
-
-            # Convert to tensor and normalize
-            transforms.ToTensor(),
-            transforms.Normalize(*norm_stats),
-
-            # Randomly erase parts of the image
-            transforms.RandomErasing(p = 0.5, scale = (0.02, 0.2))
-        ])
+    # If no augmentation, only resize and normalize
     else:
         return transforms.Compose([
             # Clean resize
@@ -85,9 +93,9 @@ def get_data_loader(
     root_dir: str,
     batch_size: int = 32,
     shuffle: bool = True,
-    distort: bool = True
+    aug_params: dict = None
 ):
-    transformer = _get_transformer(distort)
+    transformer = _get_transformer(aug_params)
     ds = DistractedDriverDataset(metadata, root_dir, transformer)
     loader = DataLoader(ds, batch_size = batch_size, shuffle = shuffle, num_workers = 2)
     return loader
