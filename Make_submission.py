@@ -10,9 +10,9 @@ from model import get_model
 from utils import get_device
 
 
-TEST_DIR = "data/state-farm-distracted-driver-detection/imgs/test"
-MODEL_PATH = "data/models/Resnet18_5k_5e.pth"
-OUTPUT_CSV = "data/submissions/sub2.csv"
+TEST_DIR = "data/imgs/test"
+MODEL_PATH = "data/models/resnet18_final_all_data.pth"
+OUTPUT_CSV = "data/submissions/sub.csv"
 
 classes = [f"c{i}" for i in range(10)]
 
