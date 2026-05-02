@@ -11,7 +11,8 @@ from utils import get_device
 
 
 TEST_DIR = "data/state-farm-distracted-driver-detection/imgs/test"
-MODEL_PATH = "data/models/Resnet18_5k_5e.pth"
+# MODEL_PATH = "data/models/Resnet18_5k_5e.pth"
+MODEL_PATH = 'data/models/best_driver_model_fold5.pth'
 OUTPUT_CSV = "data/submissions/sub2.csv"
 
 classes = [f"c{i}" for i in range(10)]
