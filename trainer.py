@@ -21,6 +21,17 @@ from preprocessing import get_data_loader
 
 
 
+#######################
+### Hyperparameters ###
+#######################
+
+K_FOLDS = 2
+EPOCHS = 1
+BATCH_SIZE = 64
+LEARNING_RATE = 1e-4
+WEIGHT_DECAY = 1e-4
+
+
 #################
 ### FUNCTIONS ###
 #################
@@ -31,8 +42,9 @@ def _train_model(
     val_loader,
     criterion,
     optimizer,
-    epochs = 5,
-    checkpoint_path = None
+    epochs = EPOCHS,
+    checkpoint_path = None,
+    BATCH_SIZE = BATCH_SIZE
 ):
     device = get_device()
     model.to(device)
@@ -59,7 +71,7 @@ def _train_model(
 
             train_loss += loss.item() * images.size(0)
 
-            if batch_idx % 10 == 0:
+            if batch_idx % BATCH_SIZE == 0:
                 print(f"Epoch {epoch + 1}, batch {batch_idx}/{len(train_loader)}, loss: {loss.item():.4f}")
 
         avg_train_loss = train_loss / len(train_loader.dataset)
@@ -121,15 +133,13 @@ if __name__ == '__main__':
     driver_img_list = load_driver_img_list()
     train_dir = 'data/state-farm-distracted-driver-detection/imgs/train'
 
-    n_epochs = 1 if args.test else 5
-
     if args.test:
         driver_img_list = driver_img_list.iloc[:128]
         cut = int(len(driver_img_list) * 0.8)
         splits = [(list(range(cut)), list(range(cut, len(driver_img_list))))]
         aug_grid = [(0, 1.0, 0.0, 0.0), (20, 0.8, 0.2, 0.5)]
     else:
-        gkf = GroupKFold(n_splits = 5)
+        gkf = GroupKFold(n_splits = K_FOLDS)
         splits = list(gkf.split(
             driver_img_list['img'],
             driver_img_list['classname'],
@@ -164,7 +174,7 @@ if __name__ == '__main__':
 
             model = get_model(num_classes = 10)
             criterion = nn.CrossEntropyLoss()
-            optimizer = optim.Adam(model.parameters(), lr = 1e-4, weight_decay = 1e-4)
+            optimizer = optim.Adam(model.parameters(), lr = LEARNING_RATE, weight_decay = WEIGHT_DECAY)
 
             train_loader = get_data_loader(train, root_dir = train_dir, aug_params = aug_params)
             val_loader = get_data_loader(val, root_dir = train_dir, shuffle = False)
@@ -175,7 +185,7 @@ if __name__ == '__main__':
                 val_loader = val_loader,
                 criterion = criterion,
                 optimizer = optimizer,
-                epochs = n_epochs
+                epochs = EPOCHS
             )
             fold_metrics.append(metrics)
 
