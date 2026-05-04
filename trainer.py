@@ -59,7 +59,7 @@ def _train_model(
             train_loss += loss.item() * images.size(0)
 
             if batch_idx % 10 == 0:
-                print(f"Epoch {epoch + 1}, batch {batch_idx}/{len(train_loader)}, loss: {loss.item():.4f}")
+                print(f"Epoch {epoch + 1}/{epochs}, batch {batch_idx}/{len(train_loader)}, loss: {loss.item():.4f}")
 
         avg_train_loss = train_loss / len(train_loader.dataset)
 
@@ -150,8 +150,8 @@ if __name__ == '__main__':
             (20, 0.8, 0.2, 0.5),  # All augmentations
         ]
 
-    all_results = []
-    all_epoch_results = []
+    all_results = pd.read_csv(SEARCH_RESULTS_PATH).to_dict('records') if os.path.exists(SEARCH_RESULTS_PATH) else []
+    all_epoch_results = pd.read_csv(EPOCH_RESULTS_PATH).to_dict('records') if os.path.exists(EPOCH_RESULTS_PATH) else []
 
     for rotation, crop_scale, color_jitter, erasing_prob in aug_grid:
         aug_params = dict(
@@ -204,6 +204,3 @@ if __name__ == '__main__':
         print(f"  Results saved ({len(all_results)}/{len(aug_grid)} configs done)")
 
     print(f'\nFinal results saved to {SEARCH_RESULTS_PATH} and {EPOCH_RESULTS_PATH}')
-
-
-
