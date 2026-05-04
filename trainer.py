@@ -8,7 +8,6 @@
 
 import os
 import argparse
-import itertools
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -72,7 +71,7 @@ def _train_model(
             train_loss += loss.item() * images.size(0)
 
             if batch_idx % BATCH_SIZE == 0:
-                print(f"Epoch {epoch + 1}, batch {batch_idx}/{len(train_loader)}, loss: {loss.item():.4f}")
+                print(f"Epoch {epoch + 1}/{epochs}, batch {batch_idx}/{len(train_loader)}, loss: {loss.item():.4f}")
 
         avg_train_loss = train_loss / len(train_loader.dataset)
 
@@ -133,6 +132,13 @@ if __name__ == '__main__':
     driver_img_list = load_driver_img_list()
     train_dir = 'data/state-farm-distracted-driver-detection/imgs/train'
 
+    n_epochs = 1 if args.test else 10
+
+    RESULTS_DIR = 'data/results/'
+    SEARCH_RESULTS_PATH = RESULTS_DIR + 'aug_search_results.csv'
+    EPOCH_RESULTS_PATH = RESULTS_DIR + 'aug_epoch_results.csv'
+    os.makedirs(RESULTS_DIR, exist_ok = True)
+
     if args.test:
         driver_img_list = driver_img_list.iloc[:128]
         cut = int(len(driver_img_list) * 0.8)
@@ -145,15 +151,19 @@ if __name__ == '__main__':
             driver_img_list['classname'],
             groups = driver_img_list['subject']
         ))
-        aug_grid = list(itertools.product(
-            [0, 10, 20],
-            [1.0, 0.8],
-            [0.0, 0.2],
-            [0.0, 0.5],
-        ))
+        # One-at-a-time design: vary one parameter at a time, hold others at baseline
+        aug_grid = [
+            (0,  1.0, 0.0, 0.0),  # Baseline: no augmentation
+            (10, 1.0, 0.0, 0.0),  # Light rotation only
+            (20, 1.0, 0.0, 0.0),  # Heavy rotation only
+            (0,  0.8, 0.0, 0.0),  # Crop only
+            (0,  1.0, 0.2, 0.0),  # Color jitter only
+            (0,  1.0, 0.0, 0.5),  # Random erasing only
+            (20, 0.8, 0.2, 0.5),  # All augmentations
+        ]
 
-    all_results = []
-    all_epoch_results = []
+    all_results = pd.read_csv(SEARCH_RESULTS_PATH).to_dict('records') if os.path.exists(SEARCH_RESULTS_PATH) else []
+    all_epoch_results = pd.read_csv(EPOCH_RESULTS_PATH).to_dict('records') if os.path.exists(EPOCH_RESULTS_PATH) else []
 
     for rotation, crop_scale, color_jitter, erasing_prob in aug_grid:
         aug_params = dict(
@@ -200,11 +210,9 @@ if __name__ == '__main__':
             'avg_val_acc': sum(m[2] for m in fold_metrics) / n,
         })
 
-    RESULTS_DIR = 'data/results/'
-    SEARCH_RESULTS_PATH = RESULTS_DIR + 'aug_search_results.csv'
-    EPOCH_RESULTS_PATH = RESULTS_DIR + 'aug_epoch_results.csv'
+        # Save incrementally after each config so progress is not lost on crashes
+        pd.DataFrame(all_results).to_csv(SEARCH_RESULTS_PATH, index = False)
+        pd.DataFrame(all_epoch_results).to_csv(EPOCH_RESULTS_PATH, index = False)
+        print(f"  Results saved ({len(all_results)}/{len(aug_grid)} configs done)")
 
-    os.makedirs(RESULTS_DIR, exist_ok = True)
-    pd.DataFrame(all_results).to_csv(SEARCH_RESULTS_PATH, index = False)
-    pd.DataFrame(all_epoch_results).to_csv(EPOCH_RESULTS_PATH, index = False)
-    print(f'\nResults saved to {SEARCH_RESULTS_PATH} and {EPOCH_RESULTS_PATH}')
+    print(f'\nFinal results saved to {SEARCH_RESULTS_PATH} and {EPOCH_RESULTS_PATH}')
