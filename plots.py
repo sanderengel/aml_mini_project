@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-SEARCH_RESULTS_PATH = "data/results/aug_search_results.csv"
-EPOCH_RESULTS_PATH = "data/results/aug_epoch_results.csv"
+SEARCH_RESULTS_PATH = "data/results/aug_search_results_2.csv"
+EPOCH_RESULTS_PATH = "data/results/aug_epoch_results_2.csv"
 PLOTS_DIR = "data/results/plots"
 
 
@@ -45,7 +45,7 @@ def main():
     plt.title("Augmentation search: lower validation loss is better")
     plt.gca().invert_yaxis()
     plt.tight_layout()
-    plt.savefig(f"{PLOTS_DIR}/aug_val_loss_ranking.png", dpi=200)
+    plt.savefig(f"{PLOTS_DIR}/aug_val_loss_ranking_2.png", dpi=200)
     plt.close()
 
     # Plot 2: validation accuracy ranking
@@ -57,7 +57,7 @@ def main():
     plt.title("Augmentation search: higher validation accuracy is better")
     plt.gca().invert_yaxis()
     plt.tight_layout()
-    plt.savefig(f"{PLOTS_DIR}/aug_val_acc_ranking.png", dpi=200)
+    plt.savefig(f"{PLOTS_DIR}/aug_val_acc_ranking_2.png", dpi=200)
     plt.close()
 
     # Average epoch results across folds
@@ -81,7 +81,7 @@ def main():
     plt.title("Validation loss over epochs by augmentation")
     plt.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
     plt.tight_layout()
-    plt.savefig(f"{PLOTS_DIR}/aug_val_loss_curves.png", dpi=200)
+    plt.savefig(f"{PLOTS_DIR}/aug_val_loss_curves_2.png", dpi=200)
     plt.close()
 
     # Plot 4: train vs validation loss for best config
@@ -96,7 +96,7 @@ def main():
     plt.title(f"Overfitting check: {best_config}")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(f"{PLOTS_DIR}/best_config_train_vs_val.png", dpi=200)
+    plt.savefig(f"{PLOTS_DIR}/best_config_train_vs_val_2.png", dpi=200)
     plt.close()
 
     print(f"Plots saved to {PLOTS_DIR}")
@@ -121,7 +121,7 @@ def main():
             .replace(".", "_")
         )
 
-        plt.savefig(f"{PLOTS_DIR}/overfitting_check_{safe_name}.png", dpi=200)
+        plt.savefig(f"{PLOTS_DIR}/overfitting_check_{safe_name}_2.png", dpi=200)
         plt.close()
 
 if __name__ == "__main__":

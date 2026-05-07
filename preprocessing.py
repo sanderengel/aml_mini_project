@@ -84,6 +84,9 @@ def _get_transformer(aug_params: dict = None):
             # Clean resize
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
+            transforms.RandomRotation(15),
+            transforms.ColorJitter(brightness = 0.2, contrast = 0.2),
+            transforms.RandomErasing(p = 0.5, scale = (0.02, 0.2)),
             transforms.Normalize(*norm_stats)
         ])
 
@@ -95,7 +98,7 @@ def get_data_loader(
     shuffle: bool = True,
     aug_params: dict = None
 ):
-    transformer = _get_transformer(aug_params)
+    transformer = _get_transformer()
     ds = DistractedDriverDataset(metadata, root_dir, transformer)
     loader = DataLoader(ds, batch_size = batch_size, shuffle = shuffle, num_workers = 2)
     return loader

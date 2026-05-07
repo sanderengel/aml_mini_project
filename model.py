@@ -13,22 +13,38 @@ import torch.nn as nn
 ### MODEL ###
 #############
 
+# def get_model(num_classes=10):
+#     model = models.resnet18(weights=ResNet18_Weights.DEFAULT)
+
+#     # Get number of features from ResNet backbone
+#     in_features = model.fc.in_features
+
+#     # Replace classification head
+#     model.fc = nn.Sequential(
+#         nn.Dropout(0.3),
+#         nn.Linear(in_features, 256),
+#         nn.ReLU(),
+#         nn.Dropout(0.2),
+#         nn.Linear(256, num_classes)
+#     )
+
+#     return model
+
 def get_model(num_classes=10):
     model = models.resnet18(weights=ResNet18_Weights.DEFAULT)
 
-    # Get number of features from ResNet backbone
+    for param in model.parameters():
+        param.requires_grad = False
+
     in_features = model.fc.in_features
 
-    # Replace classification head
     model.fc = nn.Sequential(
-        nn.Dropout(0.3),
-        nn.Linear(in_features, 256),
-        nn.ReLU(),
-        nn.Dropout(0.2),
-        nn.Linear(256, num_classes)
+        nn.Dropout(0.5),
+        nn.Linear(in_features, 10),
     )
 
     return model
+
 
 
 # def get_model(num_classes=10):

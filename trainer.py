@@ -24,8 +24,8 @@ from preprocessing import get_data_loader
 ### Hyperparameters ###
 #######################
 
-K_FOLDS = 2
-EPOCHS = 1
+K_FOLDS = 5
+EPOCHS = 8
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4
@@ -51,6 +51,8 @@ def _train_model(
     best_val_loss = float("inf")
     best_metrics = None
     epoch_history = []
+    patience = 2
+    epochs_no_improve = 0
 
     for epoch in range(epochs):
         # Training
@@ -109,12 +111,20 @@ def _train_model(
             'val_acc': val_acc,
         })
 
+
+        #Early stopping logic and saving model
+
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             best_metrics = (avg_train_loss, avg_val_loss, val_acc)
-            if checkpoint_path:
-                torch.save(model.state_dict(), checkpoint_path)
-                print("Checkpoint saved.")
+            epochs_no_improve = 0
+            torch.save(model.state_dict(), checkpoint_path)
+        else:
+            epochs_no_improve += 1
+
+        if epochs_no_improve >= patience:
+            print("Early stopping triggered")
+            break
 
     return best_metrics, epoch_history
 
@@ -132,12 +142,11 @@ if __name__ == '__main__':
     driver_img_list = load_driver_img_list()
     train_dir = 'data/state-farm-distracted-driver-detection/imgs/train'
 
-    n_epochs = 1 if args.test else 10
-
+    MODELS_DIR = "data/models/"
     RESULTS_DIR = 'data/results/'
-    SEARCH_RESULTS_PATH = RESULTS_DIR + 'aug_search_results.csv'
-    EPOCH_RESULTS_PATH = RESULTS_DIR + 'aug_epoch_results.csv'
-    os.makedirs(RESULTS_DIR, exist_ok = True)
+    SEARCH_RESULTS_PATH = RESULTS_DIR + 'aug_search_results_2.csv'
+    EPOCH_RESULTS_PATH = RESULTS_DIR + 'aug_epoch_results_2.csv'
+
 
     if args.test:
         driver_img_list = driver_img_list.iloc[:128]
@@ -153,13 +162,13 @@ if __name__ == '__main__':
         ))
         # One-at-a-time design: vary one parameter at a time, hold others at baseline
         aug_grid = [
-            (0,  1.0, 0.0, 0.0),  # Baseline: no augmentation
-            (10, 1.0, 0.0, 0.0),  # Light rotation only
-            (20, 1.0, 0.0, 0.0),  # Heavy rotation only
-            (0,  0.8, 0.0, 0.0),  # Crop only
-            (0,  1.0, 0.2, 0.0),  # Color jitter only
-            (0,  1.0, 0.0, 0.5),  # Random erasing only
-            (20, 0.8, 0.2, 0.5),  # All augmentations
+             (0,  1.0, 0.0, 0.0),  # Baseline: no augmentation
+        #     (10, 1.0, 0.0, 0.0),  # Light rotation only
+        #     (20, 1.0, 0.0, 0.0),  # Heavy rotation only
+        #     (0,  0.8, 0.0, 0.0),  # Crop only
+        #     (0,  1.0, 0.2, 0.0),  # Color jitter only
+        #     (0,  1.0, 0.0, 0.5),  # Random erasing only
+             (20, 0.8, 0.2, 0.5)  # All augmentations
         ]
 
     all_results = pd.read_csv(SEARCH_RESULTS_PATH).to_dict('records') if os.path.exists(SEARCH_RESULTS_PATH) else []
@@ -189,13 +198,19 @@ if __name__ == '__main__':
             train_loader = get_data_loader(train, root_dir = train_dir, aug_params = aug_params)
             val_loader = get_data_loader(val, root_dir = train_dir, shuffle = False)
 
+            checkpoint_path = (
+            f"{MODELS_DIR}/"
+            f"model_rot{rotation}_crop{crop_scale}_jitter{color_jitter}_erase{erasing_prob}_fold{fold + 1}.pth"
+            )
+
             metrics, epoch_history = _train_model(
                 model = model,
                 train_loader = train_loader,
                 val_loader = val_loader,
                 criterion = criterion,
                 optimizer = optimizer,
-                epochs = EPOCHS
+                epochs = EPOCHS,
+                checkpoint_path=checkpoint_path                 # Save model checkpoints ---- disable with "None"
             )
             fold_metrics.append(metrics)
 
